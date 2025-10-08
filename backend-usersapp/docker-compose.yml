@@ -1,0 +1,17 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-usersapp
+    environment:
+      MYSQL_ROOT_PASSWORD: sasa1234
+      MYSQL_DATABASE: db_users_springboot
+      MYSQL_USER: usersapp_user
+      MYSQL_PASSWORD: sasa1234
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
