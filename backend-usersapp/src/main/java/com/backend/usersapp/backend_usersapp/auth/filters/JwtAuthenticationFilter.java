@@ -1,14 +1,16 @@
 package com.backend.usersapp.backend_usersapp.auth.filters;
 
 import java.io.IOException;
-import java.util.Base64;
 import java.util.HashMap;
+import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.backend.usersapp.backend_usersapp.models.entities.User;
@@ -16,14 +18,18 @@ import com.fasterxml.jackson.core.exc.StreamReadException;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.jsonwebtoken.Jwts;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import static com.backend.usersapp.backend_usersapp.auth.TokenJwtConfig.*;
 
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter{
 
+    private static final long EXPIRATION_TIME = 3600000;
     private AuthenticationManager authenticationManager;
 
     public JwtAuthenticationFilter(AuthenticationManager authenticationManager) {
@@ -43,10 +49,6 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
             username = user.getUsername();
             password = user.getPassword();
 
-            // Optional: Log the raw username and password for debugging (not recommended for production)
-            //logger.info("Username from the request InputStream (raw) " + username);
-            //logger.info("Password from the request InputStream (raw) " + password);
-
         } catch (StreamReadException e) {
             e.printStackTrace();
         } catch (DatabindException e) {          
@@ -63,12 +65,23 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
             Authentication authResult) throws IOException, ServletException {
 
-                String username = ((org.springframework.security.core.userdetails.User)authResult.getPrincipal())
+        String username = ((org.springframework.security.core.userdetails.User)authResult.getPrincipal())
                     .getUsername();
-                    String originalInput = SECRET_KEY + "." + username;
-                String token = Base64.getEncoder().encodeToString(originalInput.getBytes());
 
-                response.setHeader(HEADER_AUTHORIZATION, PREFIX_TOKEN + token);
+        Collection<? extends GrantedAuthority> roles = authResult.getAuthorities();
+        boolean isAdmin = roles.stream()
+                .anyMatch(r -> r.getAuthority().equals("ROLE_ADMIN"));
+        
+                String token = Jwts.builder()
+                .claim("isAdmin", isAdmin)
+                .claim("authorities", new ObjectMapper().writeValueAsString(roles))
+                .subject(username)
+                .signWith(SECRET_KEY)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .compact();
+
+        response.setHeader(HEADER_AUTHORIZATION, PREFIX_TOKEN + token);
 
                 Map<String, Object> body = new HashMap<>();
                 body.put("token", token);
