@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.backend.usersapp.backend_usersapp.models.IUser;
 import com.backend.usersapp.backend_usersapp.models.dto.UserDTO;
 import com.backend.usersapp.backend_usersapp.models.dto.mapper.DtoMapperUser;
 import com.backend.usersapp.backend_usersapp.models.entities.Role;
@@ -54,33 +55,12 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDTO save(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        
-        Optional<Role> o = roleRepository.findByName("ROLE_USER");
-
-        List<Role> roles = new ArrayList<>();
-        if (o.isPresent()) {
-            roles.add(o.orElseThrow());    
-        }
-        user.setRoles(roles);
-        
+        user.setRoles(getRoles(user));
         return DtoMapperUser
                 .builder()
                 .setUser(userRepository.save(user))
                 .build();
     }
-    
-    /*@Override
-    @Transactional
-    public Optional<User> update(User user, Long id) {
-    Optional<User> userOptional = this.findById(id);
-        if(userOptional.isPresent()){
-            User userDB = userOptional.orElseThrow();
-            userDB.setUsername(user.getUsername());
-            userDB.setEmail(user.getEmail());
-            return Optional.of(this.save(userDB));
-        }
-        return Optional.empty();
-    }*/
 
     @Override
     @Transactional
@@ -89,6 +69,7 @@ public class UserServiceImpl implements UserService {
         User userOptional = null;
         if(o.isPresent()){
             User userDB = o.orElseThrow();
+            userDB.setRoles(getRoles(user));
             userDB.setUsername(user.getUsername());
             userDB.setEmail(user.getEmail());
             userOptional = userRepository.save(userDB);
@@ -103,5 +84,22 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteById(Long id) {
         userRepository.deleteById(id);
+    }
+
+    private List<Role> getRoles(IUser user){
+        Optional<Role> ou = roleRepository.findByName("ROLE_USER");
+
+        List<Role> roles = new ArrayList<>();
+        if (ou.isPresent()) {
+            roles.add(ou.orElseThrow());
+        }
+
+        if (user.isAdmin()) {
+            Optional<Role> oa = roleRepository.findByName("ROLE_ADMIN");
+            if (oa.isPresent()) {
+                roles.add(oa.orElseThrow());
+            }
+        }
+        return roles;
     }
 }

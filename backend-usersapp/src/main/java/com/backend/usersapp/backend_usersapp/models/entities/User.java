@@ -1,5 +1,7 @@
 package com.backend.usersapp.backend_usersapp.models.entities;
 
+import com.backend.usersapp.backend_usersapp.models.IUser;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +17,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -23,7 +26,7 @@ import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "users")
-public class User {
+public class User implements IUser{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -52,6 +55,9 @@ public class User {
     
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "users"})    
     private List<Role> roles = new ArrayList<>();
+
+    @Transient
+    private boolean admin;
 
     public Long getId() {
         return id;
@@ -91,6 +97,15 @@ public class User {
 
     public void setRoles(List<Role> roles) {
         this.roles = roles;
+    }
+
+    @Override
+    public boolean isAdmin() {
+        return admin;
+    }
+
+    public void setAdmin(boolean admin) {
+        this.admin = admin;
     }
     
 }

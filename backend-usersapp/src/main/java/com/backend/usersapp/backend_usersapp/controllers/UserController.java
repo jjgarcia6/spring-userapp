@@ -28,7 +28,8 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/users")
-@CrossOrigin(origins = "http://127.0.0.1:5173")
+@CrossOrigin(origins = {"http://127.0.0.1:5173", 
+                        "http://localhost:5173"})
 public class UserController {
 
     @Autowired
