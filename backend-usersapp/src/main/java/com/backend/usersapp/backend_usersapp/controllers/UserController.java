@@ -5,7 +5,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -28,8 +31,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/users")
-@CrossOrigin(origins = {"http://127.0.0.1:5173", 
-                        "http://localhost:5173"})
+@CrossOrigin(originPatterns = "*")
 public class UserController {
 
     @Autowired
@@ -40,6 +42,12 @@ public class UserController {
         return userService.findAll();
     }
 
+    @GetMapping("/page/{page}")
+    public Page<UserDTO> list(@PathVariable Integer page) {
+        Pageable pageable = PageRequest.of(page, 6);
+        return userService.findAll(pageable);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> show(@PathVariable Long id) {
         Optional<UserDTO> userOptional = userService.findById(id);
@@ -48,12 +56,6 @@ public class UserController {
         }
         return ResponseEntity.notFound().build();
     }
-
-    /*@PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public User create(@RequestBody User user) {
-        return userService.save(user);
-    }*/
 
     @PostMapping
     public ResponseEntity<?> create(@Valid @RequestBody User user, BindingResult result) {

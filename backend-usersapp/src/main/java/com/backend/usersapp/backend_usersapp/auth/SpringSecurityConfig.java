@@ -41,23 +41,20 @@ public class SpringSecurityConfig {
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        return http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, "/login").permitAll()
-                .requestMatchers(HttpMethod.POST,"/users").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.GET, "/users").permitAll()
-                .requestMatchers(HttpMethod.GET, "/users/{id}").hasAnyRole("USER","ADMIN")
-                .requestMatchers("/users/**").authenticated()  
-                .anyRequest().authenticated()
-            )
-            .addFilter(new JwtAuthenticationFilter(authenticationManager()))
-            .addFilter(new JwtValidationFilter(authenticationManager()))
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .build();
+            return http.authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.GET, "/users", "/users/page/{page}").permitAll()
+                .requestMatchers(HttpMethod.GET, "/users/{id}").hasAnyRole("USER", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/users").hasRole("ADMIN")
+                .requestMatchers("/users/**").hasRole("ADMIN")
+                // .requestMatchers(HttpMethod.DELETE, "/users/{id}").hasRole("ADMIN")
+                // .requestMatchers(HttpMethod.PUT, "/users/{id}").hasRole("ADMIN")
+                .anyRequest().authenticated())
+                .addFilter(new JwtAuthenticationFilter(authenticationConfiguration.getAuthenticationManager()))
+                .addFilter(new JwtValidationFilter(authenticationConfiguration.getAuthenticationManager()))
+                .csrf(config -> config.disable())
+                .sessionManagement(managment -> managment.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .build();
     }
 
     @Bean
@@ -65,6 +62,7 @@ public class SpringSecurityConfig {
 
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+        config.setAllowedOriginPatterns(Arrays.asList("*"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
         config.setAllowCredentials(true);
